@@ -23,6 +23,11 @@ func registerCallbacks() {
 		"goInitRenderer",
 		js.FuncOf(initRenderer),
 	)
+
+	js.Global().Set(
+		"goHandleMouseMove",
+		js.FuncOf(renderer.HandleMouseMove),
+	)
 }
 
 func main() {

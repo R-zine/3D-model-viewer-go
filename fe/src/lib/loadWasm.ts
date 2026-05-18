@@ -3,6 +3,8 @@ declare global {
     Go: any;
 
     goInitRenderer?: (canvasId: string) => string;
+
+    goHandleMouseMove?: (deltaX: number, deltaY: number) => void;
   }
 }
 

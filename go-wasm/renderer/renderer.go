@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package renderer
 
 import (
@@ -10,8 +12,27 @@ var (
 
 	program js.Value
 
-	rotation float64
+	rotationX float64
+	rotationY float64
 )
+
+func HandleMouseMove(
+	this js.Value,
+	args []js.Value,
+) any {
+
+	if len(args) < 2 {
+		return nil
+	}
+
+	deltaX := args[0].Float()
+	deltaY := args[1].Float()
+
+	rotationY += deltaX * 0.01
+	rotationX += deltaY * 0.01
+
+	return nil
+}
 
 func compileShader(
 	source string,
@@ -166,17 +187,36 @@ func perspective(
 
 func renderFrame() {
 
-	rotation += 0.01
+	cx := math.Cos(rotationX)
+sx := math.Sin(rotationX)
 
-	c := math.Cos(rotation)
-	s := math.Sin(rotation)
+cy := math.Cos(rotationY)
+sy := math.Sin(rotationY)
 
 	model := []float32{
-		float32(c), 0, float32(s), 0,
-		0, 1, 0, 0,
-		float32(-s), 0, float32(c), 0,
-		0, 0, 0, 1,
-	}
+
+	// Y rotation combined with X rotation
+
+	float32(cy),
+	float32(sx * sy),
+	float32(cx * sy),
+	0,
+
+	0,
+	float32(cx),
+	float32(-sx),
+	0,
+
+	float32(-sy),
+	float32(sx * cy),
+	float32(cx * cy),
+	0,
+
+	0,
+	0,
+	0,
+	1,
+}
 
 	view := []float32{
 		1, 0, 0, 0,
