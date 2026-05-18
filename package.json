@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "build:wasm": "node scripts/build-wasm.js",
+    "fe": "cd fe && npm run dev"
+  }
+}
