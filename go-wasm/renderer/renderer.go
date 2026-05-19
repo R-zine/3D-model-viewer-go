@@ -12,6 +12,8 @@ var (
 
 	program js.Value
 
+	currentMesh *GPUMesh
+
 	rotationX float64
 	rotationY float64
 )
@@ -94,11 +96,11 @@ func Init(
 
 	GL = canvas.Call(
 		"getContext",
-		"webgl",
+		"webgl2",
 	)
 
 	if GL.IsNull() {
-		return "webgl unsupported"
+		return "webgl2 unsupported"
 	}
 
 	vertexShader := compileShader(
@@ -118,9 +120,37 @@ func Init(
 
 	GL.Call("useProgram", program)
 
-	GL.Call("enable", GL.Get("DEPTH_TEST"))
+	GL.Call(
+		"enable",
+		GL.Get("DEPTH_TEST"),
+	)
 
-	createCubeMesh()
+	LoadGLBMeshAsync(
+
+	"/models/model.glb",
+
+	func(mesh *Mesh) {
+
+		println(
+			"positions",
+			len(mesh.Positions),
+		)
+
+		println(
+			"normals",
+			len(mesh.Normals),
+		)
+
+		println(
+			"indices",
+			len(mesh.Indices),
+		)
+
+		currentMesh = UploadMesh(mesh)
+
+		println("mesh loaded")
+	},
+)
 
 	startRenderLoop()
 
@@ -186,6 +216,22 @@ func perspective(
 }
 
 func renderFrame() {
+
+	if currentMesh == nil {
+	return
+}
+
+	GL.Call(
+	"bindBuffer",
+	GL.Get("ARRAY_BUFFER"),
+	currentMesh.VertexBuffer,
+)
+
+GL.Call(
+	"bindBuffer",
+	GL.Get("ELEMENT_ARRAY_BUFFER"),
+	currentMesh.IndexBuffer,
+)
 
 	cx := math.Cos(rotationX)
 sx := math.Sin(rotationX)
@@ -316,12 +362,12 @@ GL.Call(
 	)
 
 	GL.Call(
-		"drawElements",
-		GL.Get("TRIANGLES"),
-		indexCount,
-		GL.Get("UNSIGNED_SHORT"),
-		0,
-	)
+	"drawElements",
+	GL.Get("TRIANGLES"),
+	currentMesh.IndexCount,
+	GL.Get("UNSIGNED_INT"),
+	0,
+)
 }
 
 func startRenderLoop() {
