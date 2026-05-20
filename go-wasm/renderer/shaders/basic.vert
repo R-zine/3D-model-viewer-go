@@ -1,25 +1,22 @@
 attribute vec3 position;
 attribute vec3 normal;
+attribute vec2 uv;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+varying vec2 vUv;
 varying vec3 vNormal;
-varying vec3 vPosition;
+
 
 void main() {
 
-    vec4 worldPosition =
-        model * vec4(position, 1.0);
+    vec4 worldPos = model * vec4(position, 1.0);
 
-    vPosition = worldPosition.xyz;
+    vUv = uv;
 
-    vNormal =
-        mat3(model) * normal;
+    vNormal = normalize(mat3(model) * normal);
 
-    gl_Position =
-        projection *
-        view *
-        worldPosition;
+    gl_Position = projection * view * worldPos;
 }

@@ -7,29 +7,96 @@ import "syscall/js"
 type GPUMesh struct {
 	VertexBuffer js.Value
 	IndexBuffer  js.Value
-	IndexCount   int
+
+	Texture    js.Value
+	HasTexture bool
+
+	IndexCount int
 }
 
-func UploadMesh(mesh *Mesh) *GPUMesh {
-
-	interleaved := make([]float32, 0)
+func UploadPrimitiveMesh(
+	mesh *PrimitiveMesh,
+) *GPUMesh {
 
 	vertexCount := len(mesh.Positions) / 3
 
+	interleaved := make(
+		[]float32,
+		0,
+		vertexCount*8,
+	)
+
 	for i := 0; i < vertexCount; i++ {
 
-		interleaved = append(interleaved,
-			mesh.Positions[i*3],
-			mesh.Positions[i*3+1],
-			mesh.Positions[i*3+2],
+		px := float32(0)
+		py := float32(0)
+		pz := float32(0)
 
-			mesh.Normals[i*3],
-			mesh.Normals[i*3+1],
-			mesh.Normals[i*3+2],
+		nx := float32(0)
+		ny := float32(0)
+		nz := float32(1)
+
+		u := float32(0)
+		v := float32(0)
+
+		// POSITION
+
+		
+
+			px = mesh.Positions[i*3+0]
+			py = mesh.Positions[i*3+1]
+			pz = mesh.Positions[i*3+2]
+	
+
+		// NORMAL
+
+	
+
+			nx = mesh.Normals[i*3+0]
+			ny = mesh.Normals[i*3+1]
+			nz = mesh.Normals[i*3+2]
+	
+
+		// UV
+
+	
+
+			u = mesh.UVs[i*2+0]
+			v = mesh.UVs[i*2+1]
+	
+
+		interleaved = append(
+			interleaved,
+
+			// POSITION
+			px,
+			py,
+			pz,
+
+			// NORMAL
+			nx,
+			ny,
+			nz,
+
+			// UV
+			u,
+			v,
 		)
 	}
 
-	vertexBuffer := GL.Call("createBuffer")
+	println(
+		"vertex count",
+		vertexCount,
+	)
+
+	println(
+		"interleaved len",
+		len(interleaved),
+	)
+
+	vertexBuffer := GL.Call(
+		"createBuffer",
+	)
 
 	GL.Call(
 		"bindBuffer",
@@ -52,7 +119,9 @@ func UploadMesh(mesh *Mesh) *GPUMesh {
 		GL.Get("STATIC_DRAW"),
 	)
 
-	indexBuffer := GL.Call("createBuffer")
+	indexBuffer := GL.Call(
+		"createBuffer",
+	)
 
 	GL.Call(
 		"bindBuffer",
@@ -65,7 +134,10 @@ func UploadMesh(mesh *Mesh) *GPUMesh {
 		New(len(mesh.Indices))
 
 	for i, v := range mesh.Indices {
-		indexArray.SetIndex(i, v)
+		indexArray.SetIndex(
+			i,
+			v,
+		)
 	}
 
 	GL.Call(
@@ -78,6 +150,10 @@ func UploadMesh(mesh *Mesh) *GPUMesh {
 	return &GPUMesh{
 		VertexBuffer: vertexBuffer,
 		IndexBuffer:  indexBuffer,
-		IndexCount:   len(mesh.Indices),
+
+		Texture:    mesh.Texture,
+		HasTexture: mesh.HasTexture,
+
+		IndexCount: len(mesh.Indices),
 	}
 }

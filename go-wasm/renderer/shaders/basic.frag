@@ -1,44 +1,31 @@
 precision mediump float;
 
+varying vec2 vUv;
 varying vec3 vNormal;
-varying vec3 vPosition;
+
+uniform sampler2D diffuseTex;
+uniform vec3 lightDir;
 
 void main() {
 
-    vec3 lightPosition =
-        vec3(0.7, 0.8, 1.0);
+    vec3 N = normalize(vNormal);
+    vec3 L = normalize(lightDir);
 
-    vec3 lightDirection =
-        normalize(
-            lightPosition - vPosition
-        );
+    float diff = max(dot(N, L), 0.0);
 
-    float diffuse =
-        max(
-            dot(
-                normalize(vNormal),
-                lightDirection
-            ),
-            0.0
-        );
+   vec2 flippedUv = vec2(
+    vUv.x,
+    1.0 - vUv.y
+);
 
-    float distance =
-        length(
-            lightPosition - vPosition
-        );
+vec3 tex =
+    texture2D(
+        diffuseTex,
+        flippedUv
+    ).rgb;
 
-    float attenuation =
-        2.5 / (distance * distance);
+vec3 ambient = 0.3 * tex;
+vec3 diffuse = diff * tex;
 
-    float ambient = 0.1;
-
-    vec3 baseColor =
-        vec3(0.2, 0.8, 1.0);
-
-    vec3 color =
-        baseColor *
-        (ambient + diffuse * attenuation);
-
-    gl_FragColor =
-        vec4(color, 1.0);
+gl_FragColor = vec4(ambient + diffuse, 1.0);
 }
