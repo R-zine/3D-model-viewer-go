@@ -59,6 +59,36 @@ func createProgram(vs, fs js.Value) js.Value {
 	return p
 }
 
+func LoadModelFromBytes(data []byte) error {
+
+    mesh, err := parseGLBMesh(data)
+    if err != nil {
+        return err
+    }
+
+    currentMeshes = nil
+
+    for i := range mesh.Primitives {
+
+        gpuMesh := UploadPrimitiveMesh(
+            &mesh.Primitives[i],
+        )
+
+        currentMeshes = append(
+            currentMeshes,
+            gpuMesh,
+        )
+    }
+
+    println(
+        "model loaded:",
+        len(currentMeshes),
+        "primitives",
+    )
+
+    return nil
+}
+
 func Init(canvasID string) string {
 	document := js.Global().Get("document")
 	canvas := document.Call("getElementById", canvasID)

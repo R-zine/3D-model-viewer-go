@@ -5,12 +5,16 @@ declare global {
     goInitRenderer?: (canvasId: string) => string;
 
     goHandleMouseMove?: (deltaX: number, deltaY: number) => void;
+
+    goLoadModel?: (data: Uint8Array) => void;
   }
 }
 
 let wasmLoaded = false;
 
 let wasmLoading: Promise<void> | null = null;
+
+let goInstance: any = null;
 
 export async function loadWasm() {
   // Already initialized
@@ -27,7 +31,11 @@ export async function loadWasm() {
     // Load Go runtime
     await loadScript("/wasm/wasm_exec.js");
 
-    const go = new window.Go();
+    if (!window.Go) {
+      throw new Error("Go runtime unavailable");
+    }
+
+    goInstance = new window.Go();
 
     const response = await fetch("/wasm/main.wasm");
 
@@ -35,13 +43,22 @@ export async function loadWasm() {
       throw new Error("Failed to fetch main.wasm");
     }
 
-    const result = await WebAssembly.instantiateStreaming(
-      response,
-      go.importObject,
-    );
+    let result: WebAssembly.WebAssemblyInstantiatedSource;
+
+    // Prefer instantiateStreaming
+    if ("instantiateStreaming" in WebAssembly) {
+      result = await WebAssembly.instantiateStreaming(
+        response,
+        goInstance.importObject,
+      );
+    } else {
+      const bytes = await response.arrayBuffer();
+
+      result = await WebAssembly.instantiate(bytes, goInstance.importObject);
+    }
 
     // Start Go runtime
-    go.run(result.instance);
+    goInstance.run(result.instance);
 
     wasmLoaded = true;
 
@@ -49,6 +66,30 @@ export async function loadWasm() {
   })();
 
   return wasmLoading;
+}
+
+export async function initRenderer(canvasId: string) {
+  await loadWasm();
+
+  if (!window.goInitRenderer) {
+    throw new Error("goInitRenderer not found");
+  }
+
+  return window.goInitRenderer(canvasId);
+}
+
+export async function loadModel(file: File) {
+  await loadWasm();
+
+  if (!window.goLoadModel) {
+    throw new Error("goLoadModel not found");
+  }
+
+  const buffer = await file.arrayBuffer();
+
+  const uint8 = new Uint8Array(buffer);
+
+  window.goLoadModel(uint8);
 }
 
 function loadScript(src: string) {
