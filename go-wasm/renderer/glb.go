@@ -19,12 +19,12 @@ type GLB struct {
 }
 
 type Accessor struct {
-    BufferView    int    `json:"bufferView"`
-    ComponentType int    `json:"componentType"`
-    Count         int    `json:"count"`
-    Type          string `json:"type"`
-    ByteOffset    int    `json:"byteOffset"`
-    Normalized    bool   `json:"normalized"`
+	BufferView    int    `json:"bufferView"`
+	ComponentType int    `json:"componentType"`
+	Count         int    `json:"count"`
+	Type          string `json:"type"`
+	ByteOffset    int    `json:"byteOffset"`
+	Normalized    bool   `json:"normalized"`
 }
 
 type BufferView struct {
@@ -86,17 +86,17 @@ type Gltf struct {
 }
 
 type PrimitiveMesh struct {
-    Positions []float32
-    Normals   []float32
-    UVs       []float32
-    Indices   []uint32
+	Positions []float32
+	Normals   []float32
+	UVs       []float32
+	Indices   []uint32
 
-    Texture    js.Value
-    HasTexture bool
+	Texture    js.Value
+	HasTexture bool
 }
 
 type Mesh struct {
-    Primitives []PrimitiveMesh
+	Primitives []PrimitiveMesh
 }
 
 func ParseGLB(data []byte) (*GLB, error) {
@@ -217,150 +217,150 @@ func ParseGltf(glb *GLB) (*Gltf, error) {
 
 func parseGLBMesh(data []byte) (*Mesh, error) {
 
-    glb, err := ParseGLB(data)
-    if err != nil {
-        return nil, err
-    }
+	glb, err := ParseGLB(data)
+	if err != nil {
+		return nil, err
+	}
 
-    gltf, err := ParseGltf(glb)
-    if err != nil {
-        return nil, err
-    }
+	gltf, err := ParseGltf(glb)
+	if err != nil {
+		return nil, err
+	}
 
-    if len(gltf.Meshes) == 0 {
-        return nil, errors.New("no meshes")
-    }
+	if len(gltf.Meshes) == 0 {
+		return nil, errors.New("no meshes")
+	}
 
-    meshDef := gltf.Meshes[0]
+	meshDef := gltf.Meshes[0]
 
-    result := &Mesh{
-        Primitives: []PrimitiveMesh{},
-    }
+	result := &Mesh{
+		Primitives: []PrimitiveMesh{},
+	}
 
-    for _, primitive := range meshDef.Primitives {
+	for _, primitive := range meshDef.Primitives {
 
-        positionAccessor,
-            ok := primitive.Attributes["POSITION"]
+		positionAccessor,
+			ok := primitive.Attributes["POSITION"]
 
-        if !ok {
-            continue
-        }
+		if !ok {
+			continue
+		}
 
-        positions, err :=
-            readFloat32Accessor(
-                gltf,
-                glb,
-                positionAccessor,
-            )
+		positions, err :=
+			readFloat32Accessor(
+				gltf,
+				glb,
+				positionAccessor,
+			)
 
-        if err != nil {
-            return nil, err
-        }
+		if err != nil {
+			return nil, err
+		}
 
-        var normals []float32
+		var normals []float32
 
-        if normalAccessor,
-            ok := primitive.Attributes["NORMAL"]; ok {
+		if normalAccessor,
+			ok := primitive.Attributes["NORMAL"]; ok {
 
-            normals, err =
-                readFloat32Accessor(
-                    gltf,
-                    glb,
-                    normalAccessor,
-                )
+			normals, err =
+				readFloat32Accessor(
+					gltf,
+					glb,
+					normalAccessor,
+				)
 
-            if err != nil {
-                return nil, err
-            }
+			if err != nil {
+				return nil, err
+			}
 
-        } else {
+		} else {
 
-            normals = make(
-                []float32,
-                len(positions),
-            )
-        }
+			normals = make(
+				[]float32,
+				len(positions),
+			)
+		}
 
-        var uvs []float32
+		var uvs []float32
 
-        if uvAccessor,
-            ok := primitive.Attributes["TEXCOORD_0"]; ok {
+		if uvAccessor,
+			ok := primitive.Attributes["TEXCOORD_0"]; ok {
 
-            uvs, err =
-                readFloat32Accessor(
-                    gltf,
-                    glb,
-                    uvAccessor,
-                )
+			uvs, err =
+				readFloat32Accessor(
+					gltf,
+					glb,
+					uvAccessor,
+				)
 
-            if err != nil {
-                return nil, err
-            }
+			if err != nil {
+				return nil, err
+			}
 
-        } else {
+		} else {
 
-            vertexCount := len(positions) / 3
+			vertexCount := len(positions) / 3
 
-            uvs = make(
-                []float32,
-                vertexCount*2,
-            )
-        }
+			uvs = make(
+				[]float32,
+				vertexCount*2,
+			)
+		}
 
-        indices, err := readIndices(
-            gltf,
-            glb,
-            primitive.Indices,
-        )
+		indices, err := readIndices(
+			gltf,
+			glb,
+			primitive.Indices,
+		)
 
-        if err != nil {
-            return nil, err
-        }
+		if err != nil {
+			return nil, err
+		}
 
-        var texture js.Value
-        hasTexture := false
+		var texture js.Value
+		hasTexture := false
 
-        if primitive.Material >= 0 &&
-            primitive.Material < len(gltf.Materials) {
+		if primitive.Material >= 0 &&
+			primitive.Material < len(gltf.Materials) {
 
-            imageBytes,
-                mimeType,
-                sampler,
-                err := extractTextureBytes(
-                gltf,
-                glb,
-                primitive.Material,
-            )
+			imageBytes,
+				mimeType,
+				sampler,
+				err := extractTextureBytes(
+				gltf,
+				glb,
+				primitive.Material,
+			)
 
-            if err == nil &&
-                len(imageBytes) > 0 {
+			if err == nil &&
+				len(imageBytes) > 0 {
 
-                texture = uploadTexture(
-                    imageBytes,
-                    mimeType,
-                    sampler,
-                )
+				texture = uploadTexture(
+					imageBytes,
+					mimeType,
+					sampler,
+				)
 
-                hasTexture = true
-            }
-        }
+				hasTexture = true
+			}
+		}
 
-        result.Primitives =
-            append(
-                result.Primitives,
-                PrimitiveMesh{
-                    Positions: positions,
-                    Normals: normals,
-                    UVs: uvs,
-                    Indices: indices,
+		result.Primitives =
+			append(
+				result.Primitives,
+				PrimitiveMesh{
+					Positions: positions,
+					Normals:   normals,
+					UVs:       uvs,
+					Indices:   indices,
 
-                    Texture: texture,
-                    HasTexture: hasTexture,
-                },
-            )
-    }
+					Texture:    texture,
+					HasTexture: hasTexture,
+				},
+			)
+	}
 
-    return result, nil
+	return result, nil
 }
 
 func readFloat32Accessor(

@@ -61,32 +61,32 @@ func createProgram(vs, fs js.Value) js.Value {
 
 func LoadModelFromBytes(data []byte) error {
 
-    mesh, err := parseGLBMesh(data)
-    if err != nil {
-        return err
-    }
+	mesh, err := parseGLBMesh(data)
+	if err != nil {
+		return err
+	}
 
-    currentMeshes = nil
+	currentMeshes = nil
 
-    for i := range mesh.Primitives {
+	for i := range mesh.Primitives {
 
-        gpuMesh := UploadPrimitiveMesh(
-            &mesh.Primitives[i],
-        )
+		gpuMesh := UploadPrimitiveMesh(
+			&mesh.Primitives[i],
+		)
 
-        currentMeshes = append(
-            currentMeshes,
-            gpuMesh,
-        )
-    }
+		currentMeshes = append(
+			currentMeshes,
+			gpuMesh,
+		)
+	}
 
-    println(
-        "model loaded:",
-        len(currentMeshes),
-        "primitives",
-    )
+	println(
+		"model loaded:",
+		len(currentMeshes),
+		"primitives",
+	)
 
-    return nil
+	return nil
 }
 
 func Init(canvasID string) string {
@@ -108,16 +108,16 @@ func Init(canvasID string) string {
 	GL.Call("enable", GL.Get("CULL_FACE"))
 	GL.Call("cullFace", GL.Get("BACK"))
 
-	// Cache attribute/uniform locations ONCE (IMPORTANT FIX)
+	// Cache attribute/uniform locations ONCE
 	positionLoc = GL.Call("getAttribLocation", program, "position")
 	normalLoc = GL.Call("getAttribLocation", program, "normal")
 	uvLoc = GL.Call("getAttribLocation", program, "uv")
 	texLoc = GL.Call("getUniformLocation", program, "diffuseTex")
 	lightDirLoc = GL.Call(
-    "getUniformLocation",
-    program,
-    "lightDir",
-)
+		"getUniformLocation",
+		program,
+		"lightDir",
+	)
 
 	LoadGLBMeshAsync("/models/model.glb", func(mesh *Mesh) {
 		currentMeshes = nil
@@ -150,8 +150,8 @@ func perspective(fov, aspect, near, far float64) []float32 {
 	return []float32{
 		f / float32(aspect), 0, 0, 0,
 		0, f, 0, 0,
-		0, 0, float32((far+near)/(near-far)), -1,
-		0, 0, float32((2*far*near)/(near-far)), 0,
+		0, 0, float32((far + near) / (near - far)), -1,
+		0, 0, float32((2 * far * near) / (near - far)), 0,
 	}
 }
 
@@ -169,7 +169,6 @@ func renderFrame() {
 	)
 
 	GL.Call("useProgram", program)
-	
 
 	cx := math.Cos(rotationX)
 	sx := math.Sin(rotationX)
@@ -178,26 +177,26 @@ func renderFrame() {
 
 	model := []float32{
 
-    float32(cy),
-    0,
-    float32(-sy),
-    0,
+		float32(cy),
+		0,
+		float32(-sy),
+		0,
 
-    float32(sx * sy),
-    float32(cx),
-    float32(sx * cy),
-    0,
+		float32(sx * sy),
+		float32(cx),
+		float32(sx * cy),
+		0,
 
-    float32(cx * sy),
-    float32(-sx),
-    float32(cx * cy),
-    0,
+		float32(cx * sy),
+		float32(-sx),
+		float32(cx * cy),
+		0,
 
-    0,
-    -0.5,
-    0,
-    1,
-}
+		0,
+		-0.5,
+		0,
+		1,
+	}
 
 	view := []float32{
 		1, 0, 0, 0,
@@ -211,21 +210,18 @@ func renderFrame() {
 	setMatrixUniform("model", model)
 	setMatrixUniform("view", view)
 	setMatrixUniform("projection", projection)
-	
 
 	// IMPORTANT: set texture unit ALWAYS
 	GL.Call("activeTexture", GL.Get("TEXTURE0"))
 	GL.Call("uniform1i", texLoc, 0)
 
-GL.Call(
-    "uniform3f",
-    lightDirLoc,
-    0.5,
-    1.0,
-    0.8,
-)
-
-
+	GL.Call(
+		"uniform3f",
+		lightDirLoc,
+		0.5,
+		1.0,
+		0.8,
+	)
 
 	for _, mesh := range currentMeshes {
 
@@ -237,7 +233,6 @@ GL.Call(
 		GL.Call("vertexAttribPointer", positionLoc, 3, GL.Get("FLOAT"), false, stride, 0)
 		GL.Call("vertexAttribPointer", normalLoc, 3, GL.Get("FLOAT"), false, stride, 12)
 		GL.Call("vertexAttribPointer", uvLoc, 2, GL.Get("FLOAT"), false, stride, 24)
-
 
 		GL.Call("enableVertexAttribArray", positionLoc)
 		GL.Call("enableVertexAttribArray", normalLoc)

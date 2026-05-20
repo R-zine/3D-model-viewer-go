@@ -41,29 +41,20 @@ func UploadPrimitiveMesh(
 
 		// POSITION
 
-		
-
-			px = mesh.Positions[i*3+0]
-			py = mesh.Positions[i*3+1]
-			pz = mesh.Positions[i*3+2]
-	
+		px = mesh.Positions[i*3+0]
+		py = mesh.Positions[i*3+1]
+		pz = mesh.Positions[i*3+2]
 
 		// NORMAL
 
-	
-
-			nx = mesh.Normals[i*3+0]
-			ny = mesh.Normals[i*3+1]
-			nz = mesh.Normals[i*3+2]
-	
+		nx = mesh.Normals[i*3+0]
+		ny = mesh.Normals[i*3+1]
+		nz = mesh.Normals[i*3+2]
 
 		// UV
 
-	
-
-			u = mesh.UVs[i*2+0]
-			v = mesh.UVs[i*2+1]
-	
+		u = mesh.UVs[i*2+0]
+		v = mesh.UVs[i*2+1]
 
 		interleaved = append(
 			interleaved,
