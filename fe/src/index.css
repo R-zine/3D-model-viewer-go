@@ -1,3 +1,14 @@
 * {
-  margin: 0
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html {
+  color-scheme: dark;
+  background: #0b0d10;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
 }

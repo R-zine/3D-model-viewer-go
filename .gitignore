@@ -1,0 +1,9 @@
+# Generated WebAssembly and frontend output
+fe/public/wasm/
+fe/dist/
+go-wasm/wasm/
+
+# Local tooling
+.coverage/
+coverage.out
+*.coverprofile

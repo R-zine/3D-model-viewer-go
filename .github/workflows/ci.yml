@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go-wasm/go.mod
+          cache-dependency-path: go-wasm/go.mod
+
+      - name: Check Go formatting
+        shell: bash
+        run: test -z "$(gofmt -l go-wasm)"
+
+      - name: Test and vet pure Go packages
+        working-directory: go-wasm
+        run: |
+          go test -race -covermode=atomic -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+          coverage="$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $3); print $3}')"
+          awk -v coverage="$coverage" 'BEGIN { if (coverage + 0 < 90) { printf "coverage %.1f%% is below 90%%\n", coverage; exit 1 } }'
+          go test ./gltf -run='^$' -fuzz='^FuzzParseGLB$' -fuzztime=3s
+          go test ./gltf -run='^$' -fuzz='^FuzzParseGLBJSON$' -fuzztime=3s
+          go vet ./...
+
+      - name: Compile WebAssembly renderer
+        working-directory: go-wasm
+        env:
+          GOOS: js
+          GOARCH: wasm
+        run: go build -buildvcs=false -o "$RUNNER_TEMP/main.wasm" .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: fe/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: fe
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+      - name: Type-check and lint frontend
+        working-directory: fe
+        run: |
+          npm run typecheck
+          npm run lint
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Chromium
+        working-directory: fe
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser smoke tests
+        working-directory: fe
+        run: npm run test:e2e

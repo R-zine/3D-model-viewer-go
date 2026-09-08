@@ -3,87 +3,81 @@
 package main
 
 import (
+	"fmt"
+	"math"
 	"syscall/js"
 	"viewer/renderer"
 )
 
-func initRenderer(
-	this js.Value,
-	args []js.Value,
-) any {
+const maxUploadBytes = 128 << 20
 
-	if len(args) < 1 {
-		return "missing canvas id"
-	}
+var callbacks []js.Func
 
-	return renderer.Init(
-		args[0].String(),
-	)
+func main() {
+	register("goInitRenderer", initRenderer)
+	register("goRotateRenderer", rotateRenderer)
+	register("goLoadModel", loadModel)
+	register("goRendererFPS", rendererFPS)
+	register("goDisposeRenderer", disposeRenderer)
+	select {}
 }
 
-func loadModel(
-	this js.Value,
-	args []js.Value,
-) any {
+func register(name string, callback func(js.Value, []js.Value) any) {
+	function := js.FuncOf(callback)
+	callbacks = append(callbacks, function)
+	js.Global().Set(name, function)
+}
 
-	if len(args) < 1 {
-		println("missing model data")
-		return nil
+func initRenderer(this js.Value, args []js.Value) any {
+	if len(args) != 1 || args[0].Type() != js.TypeString {
+		return "a canvas id is required"
 	}
+	return errorResult(renderer.Init(args[0].String()))
+}
 
-	uint8Array := args[0]
+func rotateRenderer(this js.Value, args []js.Value) any {
+	if len(args) != 2 || args[0].Type() != js.TypeNumber || args[1].Type() != js.TypeNumber {
+		return "two numeric pointer deltas are required"
+	}
+	deltaX, deltaY := args[0].Float(), args[1].Float()
+	if math.IsNaN(deltaX) || math.IsInf(deltaX, 0) || math.IsNaN(deltaY) || math.IsInf(deltaY, 0) {
+		return "pointer deltas must be finite"
+	}
+	renderer.Rotate(deltaX, deltaY)
+	return ""
+}
 
-	length := uint8Array.
-		Get("length").
-		Int()
-
+func loadModel(this js.Value, args []js.Value) any {
+	if len(args) != 1 || !args[0].InstanceOf(js.Global().Get("Uint8Array")) {
+		return "model data must be a Uint8Array"
+	}
+	array := args[0]
+	length := array.Get("byteLength").Int()
+	if length <= 0 {
+		return "model data is empty"
+	}
+	if length > maxUploadBytes {
+		return fmt.Sprintf("model exceeds the %d MiB upload limit", maxUploadBytes>>20)
+	}
 	data := make([]byte, length)
-
-	js.CopyBytesToGo(
-		data,
-		uint8Array,
-	)
-
-	err := renderer.LoadModelFromBytes(data)
-
-	if err != nil {
-
-		println(
-			"failed to load model:",
-			err.Error(),
-		)
-
-		return nil
+	if copied := js.CopyBytesToGo(data, array); copied != length {
+		return "could not copy all model data into WebAssembly memory"
 	}
+	return errorResult(renderer.LoadModelFromBytes(data))
+}
 
-	println("model loaded from ui")
+func rendererFPS(this js.Value, args []js.Value) any {
+	return renderer.FPS()
+}
 
+func disposeRenderer(this js.Value, args []js.Value) any {
+	renderer.Dispose()
 	return nil
 }
 
-func registerCallbacks() {
-
-	js.Global().Set(
-		"goInitRenderer",
-		js.FuncOf(initRenderer),
-	)
-
-	js.Global().Set(
-		"goHandleMouseMove",
-		js.FuncOf(renderer.HandleMouseMove),
-	)
-
-	js.Global().Set(
-		"goLoadModel",
-		js.FuncOf(loadModel),
-	)
-}
-
-func main() {
-
-	registerCallbacks()
-
-	println("Go WASM initialized")
-
-	select {}
+func errorResult(err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	return ""
 }

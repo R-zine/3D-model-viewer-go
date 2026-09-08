@@ -1,6 +1,21 @@
 {
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "build:wasm": "node scripts/build-wasm.js",
-    "fe": "cd fe && npm i && npm run dev"
+    "fe": "npm --prefix fe run dev",
+    "build": "npm --prefix fe run build",
+    "hooks:install": "node scripts/install-hooks.js",
+    "verify:commit": "node scripts/pre-commit.js",
+    "test:go": "cd go-wasm && go test ./...",
+    "test:go:coverage": "cd go-wasm && go test -cover ./...",
+    "test:go:fuzz": "cd go-wasm && go test ./gltf -run=NoTests -fuzz=FuzzParseGLB$ -fuzztime=3s && go test ./gltf -run=NoTests -fuzz=FuzzParseGLBJSON$ -fuzztime=3s",
+    "test:fe": "npm --prefix fe run typecheck && npm --prefix fe run lint && npm --prefix fe run build",
+    "test:e2e": "npm --prefix fe run test:e2e",
+    "test": "npm run test:go && npm run test:fe",
+    "test:all": "npm run build && npm test && npm run test:go:fuzz && npm run test:e2e"
   }
 }
